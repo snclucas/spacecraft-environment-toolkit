@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+</head>
+<body>
+
+<div class="modal fade" id="addOrbitModal" th:fragment="add_orbit_modal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" >Add new orbit</h5>
+            </div>
+            <div class="modal-body">
+                <form id="add_orbit_form" th:action="@{/orbits/add}" method="POST" th:object="${orbitFormData}">
+                    <div class="form-group">
+                        <select>
+                            <option value="Keplerian" selected >Keplerian</option>
+                            <option value="Circular">Circular</option>
+                            <option value="Equinoctial">Equinoctial</option>
+                            <option value="Cartesian">Cartesian</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="semiMajorAxis" th:field="*{semiMajorAxis}" name="semiMajorAxis" class="form-control" placeholder="Semi-major axis"/>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="eccentricity" th:field="*{eccentricity}" name="eccentricity" class="form-control" placeholder="Eccentricity"/>
+                    </div>
+                    <input
+                            type="hidden"
+                            th:name="${_csrf.parameterName}"
+                            th:value="${_csrf.token}" />
+                    <p id="message_privacy">Message is public</p>
+                    <hr />
+                    <button class="btn btn-lg btn-primary btn-block btn-signin" type="submit">Save message</button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
