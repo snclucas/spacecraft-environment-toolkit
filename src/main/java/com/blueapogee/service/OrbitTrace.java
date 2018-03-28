@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class OrbitTrace {
 
-  public Map<String, Orbit> orbitTrace = new HashMap<>();
+  public Map<String, String> orbitTrace = new HashMap<>();
 
 
 }

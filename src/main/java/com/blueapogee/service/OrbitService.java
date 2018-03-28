@@ -7,9 +7,14 @@ import com.blueapogee.model.form.OrbitPropagationFormData;
 import com.blueapogee.model.form.PropagationParameters;
 import com.blueapogee.model.repo.OrbitRepository;
 import org.bson.types.ObjectId;
+import org.hipparchus.ode.nonstiff.*;
+import org.hipparchus.util.*;
 import org.orekit.data.DataProvidersManager;
 import org.orekit.data.DirectoryCrawler;
 import org.orekit.errors.OrekitException;
+import org.orekit.forces.*;
+import org.orekit.forces.gravity.*;
+import org.orekit.forces.gravity.potential.*;
 import org.orekit.frames.Frame;
 import org.orekit.frames.FramesFactory;
 import org.orekit.orbits.KeplerianOrbit;
@@ -17,20 +22,47 @@ import org.orekit.orbits.OrbitType;
 import org.orekit.orbits.PositionAngle;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.analytical.KeplerianPropagator;
+import org.orekit.propagation.numerical.*;
+import org.orekit.propagation.sampling.*;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.time.TimeScale;
 import org.orekit.time.TimeScalesFactory;
+import org.orekit.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
 public class OrbitService {
+
+
+  /*
+
+
+{
+	"orbit": {
+		"type": "keplerian",
+		"semiMajorAxis": 24396159,
+		"eccentricity":0.72831215,
+		"inclination":0.72831215
+	},
+	"propagationParameters": {
+		"propagator": "KeplerianPropagator",
+		"initalDate":"2007-01-01T23:38:00.000",
+		"duration": 6000,
+		"stepTime": 60,
+		"minStep": 0.001,
+		"maxStep": 1000.0,
+		"positionTolerance": 10
+	}
+}
+
+
+  */
 
   @Autowired
   private OrbitRepository orbitRepository;
@@ -112,14 +144,14 @@ public class OrbitService {
       DataProvidersManager manager = DataProvidersManager.getInstance();
       manager.addProvider(new DirectoryCrawler(orekitData));
 
-
       PropagationParameters params = orbitPropagationFormData.getPropagationParameters();
 
       Frame inertialFrame = FramesFactory.getEME2000();
 
       utc = TimeScalesFactory.getUTC();
 
-      AbsoluteDate initialDate = new AbsoluteDate(2004, 01, 01, 23, 30, 00.000, utc);
+      AbsoluteDate initialDate = new AbsoluteDate(params.initalDate, utc);
+
       Orbit suppliedOrbit = orbitPropagationFormData.orbit;
 
       org.orekit.orbits.Orbit initialOrbit = new KeplerianOrbit(
@@ -134,28 +166,44 @@ public class OrbitService {
               initialDate,
               params.mu);
 
+      // Initial state definition
+      SpacecraftState initialState = new SpacecraftState(initialOrbit);
 
-      KeplerianPropagator kepler = new KeplerianPropagator(initialOrbit);
-      kepler.setSlaveMode();
-
-
-
-      double duration = params.duration;
-      AbsoluteDate finalDate = initialDate.shiftedBy(duration);
-      double stepT = params.stepTime;
-      int cpt = 1;
-      for (AbsoluteDate extrapDate = initialDate;
-           extrapDate.compareTo(finalDate) <= 0;
-           extrapDate = extrapDate.shiftedBy(stepT))  {
-        SpacecraftState currentState = kepler.propagate(extrapDate);
-        System.out.println("step " + cpt++);
-        System.out.println(" time : " + currentState.getDate());
-        System.out.println(" " + currentState.getOrbit());
-
-        trace.orbitTrace.put(currentState.getDate().toString(), currentState.getOrbit());
-
+      OrbitType propagationType;
+      if(params.propagator.equalsIgnoreCase("equinoctal")) {
+        propagationType = OrbitType.EQUINOCTIAL;
+      } else if(params.propagator.equalsIgnoreCase("cartesian")) {
+        propagationType = OrbitType.CARTESIAN;
+      } else if(params.propagator.equalsIgnoreCase("circular")) {
+        propagationType = OrbitType.CIRCULAR;
+      } else {
+        propagationType = OrbitType.KEPLERIAN;
       }
 
+      double[][] tolerances =
+              NumericalPropagator.tolerances(params.positionTolerance, initialOrbit, propagationType);
+      AdaptiveStepsizeIntegrator integrator =
+              new DormandPrince853Integrator(params.minStep, params.maxStep, tolerances[0], tolerances[1]);
+
+      NumericalPropagator propagator = new NumericalPropagator(integrator);
+      propagator.setOrbitType(propagationType);
+
+      NormalizedSphericalHarmonicsProvider provider =
+              GravityFieldFactory.getNormalizedProvider(10, 10);
+
+      ForceModel holmesFeatherstone =
+              new HolmesFeatherstoneAttractionModel(FramesFactory.getITRF(IERSConventions.IERS_2010,
+                      true),
+                      provider);
+
+      propagator.addForceModel(holmesFeatherstone);
+
+      propagator.setMasterMode(60., new TutorialStepHandler());
+
+      propagator.setInitialState(initialState);
+
+      SpacecraftState finalState =
+              propagator.propagate(new AbsoluteDate(initialDate, 630.));
 
     } catch (OrekitException e) {
       e.printStackTrace();
@@ -163,4 +211,36 @@ public class OrbitService {
 
     return trace;
   }
+
+
+
+  private static class TutorialStepHandler implements OrekitFixedStepHandler {
+
+    public void init(final SpacecraftState s0, final AbsoluteDate t) {
+      System.out.println("          date                a           e" +
+              "           i         \u03c9          \u03a9" +
+              "          \u03bd");
+    }
+
+    public void handleStep(SpacecraftState currentState, boolean isLast) {
+      KeplerianOrbit o = (KeplerianOrbit) OrbitType.KEPLERIAN.convertType(currentState.getOrbit());
+      System.out.format(Locale.US, "%s %12.3f %10.8f %10.6f %10.6f %10.6f %10.6f%n",
+              currentState.getDate(),
+              o.getA(), o.getE(),
+              FastMath.toDegrees(o.getI()),
+              FastMath.toDegrees(o.getPerigeeArgument()),
+              FastMath.toDegrees(o.getRightAscensionOfAscendingNode()),
+              FastMath.toDegrees(o.getTrueAnomaly()));
+      if (isLast) {
+        System.out.println("this was the last step ");
+        System.out.println();
+      }
+    }
+
+  }
+
+
+
 }
+
+
