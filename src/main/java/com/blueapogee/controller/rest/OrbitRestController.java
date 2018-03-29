@@ -3,7 +3,7 @@ package com.blueapogee.controller.rest;
 import com.blueapogee.model.HtplUser;
 import com.blueapogee.model.Orbit;
 import com.blueapogee.model.form.OrbitFormData;
-import com.blueapogee.model.form.OrbitPropagationFormData;
+import com.blueapogee.model.form.OrbitPropagationParameters;
 import com.blueapogee.service.OrbitService;
 
 import com.blueapogee.service.OrbitTrace;
@@ -20,6 +20,32 @@ import java.util.List;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+
+/*
+
+{
+    "orbit": {
+    	"type": "keplerian",
+    	"semiMajorAxis": "24396159",
+    	"eccentricity": "0.72831215",
+    	"inclination": "0.122173",
+    	"RAAN": "4.55531",
+    	"argumentOfPerigee": "3.14159",
+    	"trueAnomaly": "0.0"
+    },
+    "propagationParameters": {
+    	"initialDate": "2018-01-01T07:30:45.874",
+    	"propagator": "keplerian",
+    	"duration": 600,
+    	"stepTime": 60,
+    	"minStep": 0.001,
+    	"maxStep": 1000.0,
+    	"positionTolerance": 10
+    }
+}
+
+*/
+
 @RestController
 public class OrbitRestController {
 
@@ -34,7 +60,8 @@ public class OrbitRestController {
   @RequestMapping(method=GET, value={"/api/orbits/{id}"})
   public Orbit message(
           @PathVariable("id") String id) {
-    return orbitService.getOrbitById(id);
+    HtplUser user = (HtplUser) context.getAttribute("user_from_token");
+    return orbitService.getOrbitById(id, user);
   }
 
   @RequestMapping(method=GET, value={"/api/orbits"})
@@ -65,14 +92,12 @@ public class OrbitRestController {
     return createOrbit(orbitFormData);
   }
 
-
   @RequestMapping(method=POST, value={"/api/orbits/propagate"},
           produces={"application/json"},
           consumes={"application/json"})
-  public OrbitTrace propagateOrbitFromJSON(@RequestBody OrbitPropagationFormData orbitPropagationFormData) {
-    return propagateOrbit(orbitPropagationFormData);
+  public OrbitTrace propagateOrbitFromJSON(@RequestBody OrbitPropagationParameters orbitPropagationParameters) {
+    return propagateOrbit(orbitPropagationParameters);
   }
-
 
   @RequestMapping(method = RequestMethod.POST, value={"/api/orbits/add"},
           headers = "content-type=application/x-www-form-urlencoded")
@@ -85,14 +110,14 @@ public class OrbitRestController {
     return orbitService.saveOrbit(orbitFormData, user);
   }
 
-  private OrbitTrace propagateOrbit(OrbitPropagationFormData orbitPropagationFormData) {
+  private OrbitTrace propagateOrbit(OrbitPropagationParameters orbitPropagationParameters) {
     HtplUser user = (HtplUser) context.getAttribute("user_from_token");
-    return orbitService.propagateOrbit(orbitPropagationFormData, user);
+    return orbitService.propagateOrbit(orbitPropagationParameters, user);
   }
 
   private String deleteOrbit(String orbit_id) {
     HtplUser user = (HtplUser) context.getAttribute("user_from_token");
-    long result = orbitService.deleteOrbit(user, orbit_id);
+    long result = orbitService.deleteOrbit(orbit_id, user);
 
     JSONObject jsonString = new JSONObject();
 
@@ -111,7 +136,8 @@ public class OrbitRestController {
 
   @RequestMapping(method=POST, value={"/api/orbits/delete/{orbit_id}"})
   public Orbit deleteMessages(@PathVariable("orbit_id") String orbit_id) {
-    Orbit orbit = orbitService.getOrbitById(orbit_id);
+    HtplUser user = (HtplUser) context.getAttribute("user_from_token");
+    Orbit orbit = orbitService.getOrbitById(orbit_id, user);
     orbitService.deleteOrbit(orbit);
     return orbit;
   }

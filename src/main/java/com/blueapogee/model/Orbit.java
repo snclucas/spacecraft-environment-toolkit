@@ -1,6 +1,7 @@
 package com.blueapogee.model;
 
 import com.blueapogee.model.form.OrbitFormData;
+import com.blueapogee.model.form.OrbitParameters;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -31,6 +32,7 @@ public class Orbit {
   public double trueAnomaly = 0.0;
   public double meanAnomaly = 0.0;
 
+  private String user;
 
   public Orbit() {
     this.id = new ObjectId().toString();
@@ -60,10 +62,18 @@ public class Orbit {
     this.created_at = df.format(new Date());
   }
 
-  public Orbit(final OrbitFormData orbitFormData) {
-    this(orbitFormData.type, orbitFormData.name, orbitFormData.fromDate, orbitFormData.toDate, orbitFormData.epoch,
-            orbitFormData.eccentricity, orbitFormData.semiMajorAxis, orbitFormData.inclination,
-            orbitFormData.RAAN, orbitFormData.argumentOfPerigee, orbitFormData.trueAnomaly);
+  public Orbit(final OrbitParameters orbitParameters) {
+    this(orbitParameters.type, orbitParameters.name, orbitParameters.fromDate, orbitParameters.toDate, orbitParameters.epoch,
+            orbitParameters.eccentricity, orbitParameters.semiMajorAxis, orbitParameters.inclination,
+            orbitParameters.RAAN, orbitParameters.argumentOfPerigee, orbitParameters.trueAnomaly);
+  }
+
+  public String getUser() {
+    return user;
+  }
+
+  public void setUser(final String user) {
+    this.user = user;
   }
 
   public String getType() {

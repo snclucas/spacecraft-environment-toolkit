@@ -1,56 +1,19 @@
 package com.blueapogee.model.form;
 
-
-import org.orekit.propagation.analytical.KeplerianPropagator;
-
-public class OrbitFormData {
-
-  static class PropagationParameters {
-
-    public double duration = 365*24*3600;
-    public double stepTime = 3600;
-    public double mu = 3.986004415e+14;
-    public String propagator = "KeplerianPropagator";
-
-    public PropagationParameters() {}
-
-  }
-
-  public PropagationParameters propagationParameters;
-
-  public String type = "";
-  public String name = "";
-  public String fromDate = "";
-  public String toDate = "";
+public class OrbitFormData extends OrbitParameters {
 
   public boolean isPrivate = true;
 
-  public double epoch = 0.0;
-  public double eccentricity = 0.0; //eccentricity
-  public double semiMajorAxis = 0.0;
-  public double inclination = 0.0;
-  public double RAAN = 0.0;
-  public double argumentOfPerigee = 0.0;
-  public double trueAnomaly = 0.0;
-  public double meanAnomaly = 0.0;
 
   public OrbitFormData() {}
 
+
   public OrbitFormData(final String type, final String name, final String fromDate, final String toDate, final double epoch,
                final double eccentricity, final double semiMajorAxis, final double inclination,
-               final double RAAN, final double argumentOfPerigee, final double trueAnomaly, PropagationParameters propagationParameters) {
-    this.type = type;
-    this.name = name;
-    this.fromDate = fromDate;
-    this.toDate = toDate;
-    this.epoch = epoch;
-    this.eccentricity = eccentricity;
-    this.semiMajorAxis = semiMajorAxis;
-    this.inclination = inclination;
-    this.RAAN = RAAN;
-    this.argumentOfPerigee = argumentOfPerigee;
-    this.trueAnomaly = trueAnomaly;
-    this.propagationParameters = propagationParameters;
+               final double RAAN, final double argumentOfPerigee, final double trueAnomaly, final double meanAnomaly,
+                       final double eccentricAnomaly, String positionAngle) {
+    super(type, name, fromDate, toDate, epoch, eccentricity, semiMajorAxis, inclination,
+            RAAN, argumentOfPerigee, trueAnomaly, meanAnomaly, eccentricAnomaly, positionAngle);
   }
 
   public String getType() {
@@ -141,11 +104,4 @@ public class OrbitFormData {
     this.trueAnomaly = trueAnomaly;
   }
 
-  public PropagationParameters getParams() {
-    return propagationParameters;
-  }
-
-  public void setParams(final PropagationParameters propagationParameters) {
-    this.propagationParameters = propagationParameters;
-  }
 }
