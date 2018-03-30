@@ -17,18 +17,15 @@ import org.orekit.errors.OrekitException;
 import org.orekit.forces.*;
 import org.orekit.forces.gravity.*;
 import org.orekit.forces.gravity.potential.*;
-import org.orekit.frames.Frame;
-import org.orekit.frames.FramesFactory;
-import org.orekit.frames.TopocentricFrame;
+import org.orekit.frames.*;
+import org.orekit.orbits.CircularOrbit;
 import org.orekit.orbits.KeplerianOrbit;
 import org.orekit.orbits.OrbitType;
 import org.orekit.orbits.PositionAngle;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.events.ElevationDetector;
 import org.orekit.propagation.events.EventDetector;
-import org.orekit.propagation.events.handlers.EventHandler;
 import org.orekit.propagation.numerical.*;
-import org.orekit.propagation.sampling.*;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.time.TimeScale;
 import org.orekit.time.TimeScalesFactory;
@@ -85,17 +82,30 @@ public class OrbitService {
     	"maxStep": 1000.0,
     	"positionTolerance": 10
     },
-    "groundstation": {
-    	"longitude": 0.785398,
-    	"latitude": 0.436332,
-    	"altitude": 0.0
-    },
+    "groundstation": [
+    	{
+    	"name": "station1",
+    	"longitude": 45,
+    	"latitude": 25,
+    	"altitude": 0.0,
+    	"minVisibilityElevation": 5.0
+    	},
+    	{
+    	"name": "station2",
+    	"longitude": 45,
+    	"latitude": 25,
+    	"altitude": 0.0,
+    	"minVisibilityElevation": 5.0
+    	}
+    ],
     "output": {
     	"outputs": "X,Y,Z,I,lat-lon"
     }
 }
 
   */
+
+
 
   @Autowired
   private OrbitRepository orbitRepository;
@@ -151,7 +161,7 @@ public class OrbitService {
 
     OrbitParameters orbitParameters = orbitPropagationParameters.orbit;
     if(!OrbitUtils.checkOrbitValidity(orbitParameters)) {
-      trace.orbit.add(OrbitUtils.makeErrorOutput("Bad orbit"));
+      trace.errors = OrbitUtils.makeErrorOutput("Bad orbit");
       return trace;
     }
 
@@ -168,11 +178,11 @@ public class OrbitService {
       if(orbitPropagationParameters.loadOrbit && !orbitParameters.name.equals("")) {
         Orbit orbit = getOrbitByName(orbitParameters.name, user);
         if(orbit == null) {
-          trace.orbit.add(OrbitUtils.makeErrorOutput("No orbit found with name {" + orbitParameters.name + "}"));
+          trace.errors = (OrbitUtils.makeErrorOutput("No orbit found with name {" + orbitParameters.name + "}"));
           return trace;
         }
-       /// orbit.
-        initialOrbit = new KeplerianOrbit(
+        /// orbit.
+        initialOrbit = new CircularOrbit(
                 orbit.semiMajorAxis,
                 orbit.eccentricity,
                 orbit.inclination,
@@ -195,11 +205,11 @@ public class OrbitService {
       SpacecraftState initialState = new SpacecraftState(initialOrbit);
 
       OrbitType propagationType;
-      if(propagationParams.propagator.equalsIgnoreCase("equinoctal")) {
+      if(orbitParameters.type.equalsIgnoreCase("equinoctal")) {
         propagationType = OrbitType.EQUINOCTIAL;
-      } else if(propagationParams.propagator.equalsIgnoreCase("cartesian")) {
+      } else if(orbitParameters.type.equalsIgnoreCase("cartesian")) {
         propagationType = OrbitType.CARTESIAN;
-      } else if(propagationParams.propagator.equalsIgnoreCase("circular")) {
+      } else if(orbitParameters.type.equalsIgnoreCase("circular")) {
         propagationType = OrbitType.CIRCULAR;
       } else {
         propagationType = OrbitType.KEPLERIAN;
@@ -217,108 +227,56 @@ public class OrbitService {
       }
 
       NumericalPropagator propagator = new NumericalPropagator(integrator);
-
       propagator.setOrbitType(propagationType);
 
       ForceModel forceModel;
       if(propagationParams.forceModel.equalsIgnoreCase("HolmesFeatherstone")) {
         NormalizedSphericalHarmonicsProvider provider =
                 GravityFieldFactory.getNormalizedProvider(10, 10);
-        forceModel = new HolmesFeatherstoneAttractionModel(FramesFactory.getITRF(IERSConventions.IERS_2010, true),
-
-                provider);
+        forceModel = new HolmesFeatherstoneAttractionModel(
+                FramesFactory.getITRF(IERSConventions.IERS_2010, true), provider);
         propagator.addForceModel(forceModel);
       } else {
         forceModel = new NewtonianAttraction(propagationParams.mu);
         propagator.addForceModel(forceModel);
       }
 
-      propagator.setMasterMode(propagationParams.stepTime, new TutorialStepHandler(trace, outputParameters));
-
+      propagator.setMasterMode(propagationParams.stepTime, new StepHandler(trace, outputParameters));
       propagator.setInitialState(initialState);
 
-
       if(orbitPropagationParameters.groundstation != null) {
-        double longitude = FastMath.toRadians(45.);
-        double latitude  = FastMath.toRadians(25.);
-        double altitude  = 0.;
-        GeodeticPoint station1 = new GeodeticPoint(latitude, longitude, altitude);
+        for (GroundStationParameters gsp : orbitPropagationParameters.groundstation) {
+          double longitude = FastMath.toRadians(gsp.longitude);
+          double latitude = FastMath.toRadians(gsp.latitude);
+          double altitude = gsp.altitude;
 
-        Frame earthFrame = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
-        BodyShape earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
-                Constants.WGS84_EARTH_FLATTENING,
-                earthFrame);
-        TopocentricFrame sta1Frame = new TopocentricFrame(earth, station1, "station1");
+          trace.addGroundStationInfo(gsp.name, longitude, latitude, altitude);
 
-        double maxcheck  = 60.0;
-        double threshold =  0.001;
-        double elevation = FastMath.toRadians(5.);
-        EventDetector sta1Visi =
-                new ElevationDetector(maxcheck, threshold, sta1Frame).
-                        withConstantElevation(elevation).
-                        withHandler(new VisibilityHandler());
+          GeodeticPoint station = new GeodeticPoint(latitude, longitude, altitude);
 
-        propagator.addEventDetector(sta1Visi);
+          Frame earthFrame = FramesFactory.getITRF(IERSConventions.IERS_2010, true);
+          BodyShape earth = new OneAxisEllipsoid(Constants.WGS84_EARTH_EQUATORIAL_RADIUS,
+                  Constants.WGS84_EARTH_FLATTENING,
+                  earthFrame);
+
+          TopocentricFrame staFrame = new TopocentricFrame(earth, station, gsp.name);
+
+          double maxCheck = 60.0;
+          double threshold = 0.001;
+          EventDetector staVisi = new ElevationDetector(maxCheck, threshold, staFrame).
+                          withConstantElevation(gsp.minVisibilityElevation).
+                          withHandler(new VisibilityHandler(gsp.name, trace));
+
+          propagator.addEventDetector(staVisi);
+        }
       }
-
-
-
-
       SpacecraftState finalState =
               propagator.propagate(new AbsoluteDate(initialDate, propagationParams.duration));
 
     } catch (OrekitException e) {
       e.printStackTrace();
     }
-
     return trace;
   }
 
-  private static class VisibilityHandler implements EventHandler<ElevationDetector> {
-
-    public Action eventOccurred(final SpacecraftState s, final ElevationDetector detector,
-                                final boolean increasing) {
-      if (increasing) {
-        System.out.println(" Visibility on " + detector.getTopocentricFrame().getName()
-                + " begins at " + s.getDate());
-        return Action.CONTINUE;
-      } else {
-        System.out.println(" Visibility on " + detector.getTopocentricFrame().getName()
-                + " ends at " + s.getDate());
-        return Action.STOP;
-      }
-    }
-
-    public SpacecraftState resetState(final ElevationDetector detector, final SpacecraftState oldState) {
-      return oldState;
-    }
-
-  }
-
-  private static class TutorialStepHandler implements OrekitFixedStepHandler {
-
-    private final OutputPackage trace;
-    private final OutputParameters outputParameters;
-
-    TutorialStepHandler(OutputPackage trace, OutputParameters outputParameters) {
-      this.trace = trace;
-      this.outputParameters = outputParameters;
-    }
-
-    public void handleStep(SpacecraftState currentState, boolean isLast) {
-      KeplerianOrbit o = (KeplerianOrbit) OrbitType.KEPLERIAN.convertType(currentState.getOrbit());
-      trace.orbit.add(OrbitUtils.makeOutput(o, outputParameters.outputs));
-    }
-
-  }
-
-
-
-
-
-
-
-
 }
-
-

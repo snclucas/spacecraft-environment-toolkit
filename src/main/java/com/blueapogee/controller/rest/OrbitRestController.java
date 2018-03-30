@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -111,7 +112,7 @@ public class OrbitRestController {
   @RequestMapping(method=POST, value={"/api/orbits/propagate"},
           produces={"application/json"},
           consumes={"application/json"})
-  public OutputPackage propagateOrbitFromJSON(@RequestBody OrbitPropagationParameters orbitPropagationParameters) {
+  public Map<String, Object> propagateOrbitFromJSON(@RequestBody OrbitPropagationParameters orbitPropagationParameters) {
     return propagateOrbit(orbitPropagationParameters);
   }
 
@@ -126,9 +127,9 @@ public class OrbitRestController {
     return orbitService.saveOrbit(orbitFormData, user);
   }
 
-  private OutputPackage propagateOrbit(OrbitPropagationParameters orbitPropagationParameters) {
+  private Map<String, Object> propagateOrbit(OrbitPropagationParameters orbitPropagationParameters) {
     HtplUser user = (HtplUser) context.getAttribute("user_from_token");
-    return orbitService.propagateOrbit(orbitPropagationParameters, user);
+    return orbitService.propagateOrbit(orbitPropagationParameters, user).getPackage();
   }
 
   private String deleteOrbit(String orbit_id) {

@@ -1,20 +1,22 @@
 package com.blueapogee.model.form;
 
 
+import java.util.List;
+
 public class OrbitPropagationParameters {
 
   public boolean loadOrbit = false;
   public boolean saveOrbit = false;
   public PropagationParameters propagation;
   public OrbitParameters orbit;
-  public GroundStationParameters groundstation;
+  public List<GroundStationParameters> groundstation;
   public OutputParameters output;
 
   public OrbitPropagationParameters() {}
 
   public OrbitPropagationParameters(boolean saveOrbit, boolean loadOrbit, OrbitParameters orbit,
                                     PropagationParameters propagation,
-                                    GroundStationParameters groundstation,
+                                    List<GroundStationParameters> groundstation,
                                     OutputParameters output) {
     this.loadOrbit = loadOrbit;
     this.saveOrbit = saveOrbit;
