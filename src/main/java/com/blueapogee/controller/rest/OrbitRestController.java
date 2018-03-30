@@ -6,7 +6,8 @@ import com.blueapogee.model.form.OrbitFormData;
 import com.blueapogee.model.form.OrbitPropagationParameters;
 import com.blueapogee.service.OrbitService;
 
-import com.blueapogee.service.OrbitTrace;
+import com.blueapogee.service.OutputPackage;
+import org.bson.types.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,21 @@ public class OrbitRestController {
     return deleteOrbit(orbit_id);
   }
 
+  @RequestMapping(method=GET, value={"/api/orbits/{orbit_id_or_name}"},
+          produces={"application/json"},
+          consumes={"application/json"})
+  public OrbitPackage getOrbit(@PathVariable("orbit_id_or_name") String orbit_id_or_name) {
+    HtplUser user = (HtplUser) context.getAttribute("user_from_token");
+
+    Orbit orbit = ObjectId.isValid(orbit_id_or_name)
+            ? orbitService.getOrbitById(orbit_id_or_name, user)
+            : orbitService.getOrbitByName(orbit_id_or_name, user);
+
+    return (orbit != null)
+            ? new OrbitPackage("", "success" ,orbit)
+            : new OrbitPackage("No orbit found with id " + orbit_id_or_name, "error", null);
+  }
+
   @RequestMapping(method=POST, value={"/api/orbits/add"},
           produces={"application/json"},
           consumes={"application/json"})
@@ -95,7 +111,7 @@ public class OrbitRestController {
   @RequestMapping(method=POST, value={"/api/orbits/propagate"},
           produces={"application/json"},
           consumes={"application/json"})
-  public OrbitTrace propagateOrbitFromJSON(@RequestBody OrbitPropagationParameters orbitPropagationParameters) {
+  public OutputPackage propagateOrbitFromJSON(@RequestBody OrbitPropagationParameters orbitPropagationParameters) {
     return propagateOrbit(orbitPropagationParameters);
   }
 
@@ -110,7 +126,7 @@ public class OrbitRestController {
     return orbitService.saveOrbit(orbitFormData, user);
   }
 
-  private OrbitTrace propagateOrbit(OrbitPropagationParameters orbitPropagationParameters) {
+  private OutputPackage propagateOrbit(OrbitPropagationParameters orbitPropagationParameters) {
     HtplUser user = (HtplUser) context.getAttribute("user_from_token");
     return orbitService.propagateOrbit(orbitPropagationParameters, user);
   }

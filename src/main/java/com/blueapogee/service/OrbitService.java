@@ -38,7 +38,6 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.util.*;
 
 @Component
 public class OrbitService {
@@ -102,17 +101,16 @@ public class OrbitService {
   private OrbitRepository orbitRepository;
 
   public Orbit getOrbitById(String id, final HtplUser user) {
-    return orbitRepository.findOne(id);
+    return orbitRepository.findByIdAndUser(id, user.getUsername());
   }
 
   public Orbit getOrbitByName(String name, final HtplUser user) {
-    return orbitRepository.getOrbitByNameAndUser(name, user.getUsername());
+    return orbitRepository.findAllByNameAndUser(name, user.getUsername()).get(0);
   }
 
   public Page<Orbit> getAllOrbits(HtplUser user, Sort sort, int pageNumber, int limit) {
     Pageable request = new PageRequest(pageNumber - 1, limit, sort);
-    Page<Orbit> orbits = orbitRepository.findAllByName(user.getUsername(), request);
-    return orbits;
+    return orbitRepository.findAllByUser(user.getUsername(), request);
   }
 
   public Orbit saveOrbit(Orbit orbit, final HtplUser user) {
@@ -148,12 +146,12 @@ public class OrbitService {
     return saveOrbit(orbit, user);
   }
 
-  public OrbitTrace propagateOrbit(final OrbitPropagationParameters orbitPropagationParameters, final HtplUser user) {
-    OrbitTrace trace = new OrbitTrace();
+  public OutputPackage propagateOrbit(final OrbitPropagationParameters orbitPropagationParameters, final HtplUser user) {
+    OutputPackage trace = new OutputPackage();
 
     OrbitParameters orbitParameters = orbitPropagationParameters.orbit;
     if(!OrbitUtils.checkOrbitValidity(orbitParameters)) {
-      trace.orbitTrace.add(OrbitUtils.makeErrorOutput("Bad orbit"));
+      trace.orbit.add(OrbitUtils.makeErrorOutput("Bad orbit"));
       return trace;
     }
 
@@ -170,7 +168,7 @@ public class OrbitService {
       if(orbitPropagationParameters.loadOrbit && !orbitParameters.name.equals("")) {
         Orbit orbit = getOrbitByName(orbitParameters.name, user);
         if(orbit == null) {
-          trace.orbitTrace.add(OrbitUtils.makeErrorOutput("No orbit found with name {" + orbitParameters.name + "}"));
+          trace.orbit.add(OrbitUtils.makeErrorOutput("No orbit found with name {" + orbitParameters.name + "}"));
           return trace;
         }
        /// orbit.
@@ -299,17 +297,17 @@ public class OrbitService {
 
   private static class TutorialStepHandler implements OrekitFixedStepHandler {
 
-    private final OrbitTrace trace;
+    private final OutputPackage trace;
     private final OutputParameters outputParameters;
 
-    TutorialStepHandler(OrbitTrace trace, OutputParameters outputParameters) {
+    TutorialStepHandler(OutputPackage trace, OutputParameters outputParameters) {
       this.trace = trace;
       this.outputParameters = outputParameters;
     }
 
     public void handleStep(SpacecraftState currentState, boolean isLast) {
       KeplerianOrbit o = (KeplerianOrbit) OrbitType.KEPLERIAN.convertType(currentState.getOrbit());
-      trace.orbitTrace.add(OrbitUtils.makeOutput(o, outputParameters.outputs));
+      trace.orbit.add(OrbitUtils.makeOutput(o, outputParameters.outputs));
     }
 
   }
