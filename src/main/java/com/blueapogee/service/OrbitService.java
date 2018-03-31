@@ -1,5 +1,6 @@
 package com.blueapogee.service;
 
+import com.blueapogee.controller.rest.*;
 import com.blueapogee.model.HtplUser;
 import com.blueapogee.model.Orbit;
 import com.blueapogee.model.form.*;
@@ -22,7 +23,8 @@ import org.orekit.orbits.CircularOrbit;
 import org.orekit.orbits.KeplerianOrbit;
 import org.orekit.orbits.OrbitType;
 import org.orekit.orbits.PositionAngle;
-import org.orekit.propagation.SpacecraftState;
+import org.orekit.propagation.*;
+import org.orekit.propagation.analytical.tle.*;
 import org.orekit.propagation.events.ElevationDetector;
 import org.orekit.propagation.events.EventDetector;
 import org.orekit.propagation.numerical.*;
@@ -30,11 +32,18 @@ import org.orekit.time.AbsoluteDate;
 import org.orekit.time.TimeScale;
 import org.orekit.time.TimeScalesFactory;
 import org.orekit.utils.*;
+
+
+import org.orekit.propagation.analytical.tle.TLE;
+import org.orekit.propagation.analytical.tle.TLEPropagator;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.util.*;
 
 @Component
 public class OrbitService {
@@ -279,4 +288,24 @@ public class OrbitService {
     return trace;
   }
 
+  public void propagateTLEOrbit(TLEParameters tleParameters, HtplUser user) {
+
+    try {
+      TLE tle = new TLE(tleParameters.tleLine1, tleParameters.tleLine2);
+
+      Propagator p = TLEPropagator.selectExtrapolator(tle);
+
+      List<SpacecraftState> sample = new ArrayList<>();
+      for (double dt = 0; dt < tleParameters.duration; dt += tleParameters.stepTime) {
+        SpacecraftState s = p.propagate(tle.getDate().shiftedBy(dt));
+        System.out.println(s.getDate().toString() + " " + s.getA());
+        sample.add(s);
+      }
+
+    } catch (OrekitException e) {
+      e.printStackTrace();
+    }
+
+
+  }
 }

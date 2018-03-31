@@ -116,6 +116,16 @@ public class OrbitRestController {
     return propagateOrbit(orbitPropagationParameters);
   }
 
+
+  @RequestMapping(method=POST, value={"/api/orbits/tle-propagate"},
+          produces={"application/json"},
+          consumes={"application/json"})
+  public void propagateTLEFromJSON(@RequestBody TLEParameters tleParameters) {
+    propagateTLEOrbit(tleParameters);
+  }
+
+
+
   @RequestMapping(method = RequestMethod.POST, value={"/api/orbits/add"},
           headers = "content-type=application/x-www-form-urlencoded")
   public Orbit createOrbitFromForm(@ModelAttribute OrbitFormData orbitFormData ) {
@@ -131,6 +141,13 @@ public class OrbitRestController {
     HtplUser user = (HtplUser) context.getAttribute("user_from_token");
     return orbitService.propagateOrbit(orbitPropagationParameters, user).getPackage();
   }
+
+
+  private void propagateTLEOrbit(TLEParameters tleParameters) {
+    HtplUser user = (HtplUser) context.getAttribute("user_from_token");
+    orbitService.propagateTLEOrbit(tleParameters, user);//.getPackage();
+  }
+
 
   private String deleteOrbit(String orbit_id) {
     HtplUser user = (HtplUser) context.getAttribute("user_from_token");
