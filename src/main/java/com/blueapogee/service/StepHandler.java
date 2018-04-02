@@ -1,5 +1,6 @@
 package com.blueapogee.service;
 
+import com.blueapogee.service.outputs.OutputPackage;
 import com.blueapogee.service.parameters.OutputParameters;
 import com.blueapogee.service.util.OrbitUtils;
 import org.orekit.orbits.KeplerianOrbit;

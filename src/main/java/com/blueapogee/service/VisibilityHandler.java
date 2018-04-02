@@ -1,5 +1,6 @@
 package com.blueapogee.service;
 
+import com.blueapogee.service.outputs.OutputPackage;
 import org.orekit.propagation.SpacecraftState;
 import org.orekit.propagation.events.ElevationDetector;
 import org.orekit.propagation.events.handlers.EventHandler;

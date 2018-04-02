@@ -4,7 +4,7 @@ package com.blueapogee.service.util;
 import com.blueapogee.model.HtplUser;
 import com.blueapogee.model.Orbit;
 import com.blueapogee.service.OrbitService;
-import com.blueapogee.service.OutputPackage;
+import com.blueapogee.service.outputs.OutputPackage;
 import com.blueapogee.service.parameters.GeoFieldParameters;
 import com.blueapogee.service.parameters.OutputParameters;
 import org.orekit.errors.OrekitException;

@@ -1,7 +1,7 @@
-package com.blueapogee.service;
+package com.blueapogee.service.outputs;
 
 import java.util.*;
 
-public class OrbitOutput {
+class OrbitOutput {
   public List<Map<String, String>> orbit = new ArrayList<>();
 }

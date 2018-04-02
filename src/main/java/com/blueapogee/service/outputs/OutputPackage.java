@@ -1,7 +1,5 @@
-package com.blueapogee.service;
+package com.blueapogee.service.outputs;
 
-import com.blueapogee.service.outputs.GroundStation;
-import com.blueapogee.service.outputs.GroundStationEventOutput;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
