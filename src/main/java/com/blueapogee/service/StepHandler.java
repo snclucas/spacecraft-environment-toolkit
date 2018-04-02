@@ -1,6 +1,6 @@
 package com.blueapogee.service;
 
-import com.blueapogee.model.form.OutputParameters;
+import com.blueapogee.service.parameters.OutputParameters;
 import com.blueapogee.service.util.OrbitUtils;
 import org.orekit.orbits.KeplerianOrbit;
 import org.orekit.orbits.OrbitType;
@@ -20,7 +20,6 @@ public class StepHandler implements OrekitFixedStepHandler {
 
   public void handleStep(SpacecraftState currentState, boolean isLast) {
     KeplerianOrbit o = (KeplerianOrbit) OrbitType.KEPLERIAN.convertType(currentState.getOrbit());
-    System.out.println(o.getKeplerianPeriod());
     trace.addOrbitSample(OrbitUtils.makeOutput(o, outputParameters.outputs));
   }
 

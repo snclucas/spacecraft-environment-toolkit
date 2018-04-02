@@ -1,12 +1,11 @@
 package com.blueapogee.service.util;
 
 
-import com.blueapogee.model.form.OrbitParameters;
+import com.blueapogee.model.Orbit;
+import com.blueapogee.service.parameters.OrbitParameters;
 import org.hipparchus.geometry.euclidean.threed.Vector3D;
 import org.orekit.frames.Frame;
-import org.orekit.orbits.CartesianOrbit;
 import org.orekit.orbits.KeplerianOrbit;
-import org.orekit.orbits.Orbit;
 import org.orekit.orbits.PositionAngle;
 import org.orekit.time.AbsoluteDate;
 import org.orekit.utils.PVCoordinates;
@@ -18,8 +17,8 @@ import java.util.Map;
 public class OrbitUtils {
 
 
-  public static Orbit getOrbit(OrbitParameters orbitParameters, Frame inertialFrame, AbsoluteDate initialDate, double mu) {
-    Orbit orbit;
+  public static org.orekit.orbits.Orbit getOrbitFromParameters(OrbitParameters orbitParameters, Frame inertialFrame, AbsoluteDate initialDate, double mu) {
+    org.orekit.orbits.Orbit orbit;
     if(orbitParameters.type.equalsIgnoreCase("cartesian")) {
       Vector3D position  = new Vector3D(orbitParameters.Px, orbitParameters.Py, orbitParameters.Pz);
       Vector3D velocity  = new Vector3D(orbitParameters.Vx, orbitParameters.Vy, orbitParameters.Vz);
@@ -33,6 +32,30 @@ public class OrbitUtils {
               orbitParameters.argumentOfPerigee,
               orbitParameters.RAAN,
               orbitParameters.trueAnomaly,
+              PositionAngle.TRUE,
+              inertialFrame,
+              initialDate,
+              mu);
+    }
+
+    return orbit;
+  }
+
+  public static org.orekit.orbits.Orbit getOrbitFromOrbitModel(Orbit orbitModel, Frame inertialFrame, AbsoluteDate initialDate, double mu) {
+    org.orekit.orbits.Orbit orbit;
+    if(orbitModel.type.equalsIgnoreCase("cartesian")) {
+      Vector3D position  = new Vector3D(orbitModel.getPx(), orbitModel.getPy(), orbitModel.getPz());
+      Vector3D velocity  = new Vector3D(orbitModel.getVx(), orbitModel.getVy(), orbitModel.getVz());
+      PVCoordinates pvCoordinates = new PVCoordinates(position, velocity);
+      orbit = new KeplerianOrbit(pvCoordinates, inertialFrame, initialDate, mu);
+    } else {
+      orbit = new KeplerianOrbit(
+              orbitModel.getSemiMajorAxis(),
+              orbitModel.getEccentricity(),
+              orbitModel.getInclination(),
+              orbitModel.getArgumentOfPerigee(),
+              orbitModel.getRAAN(),
+              orbitModel.getTrueAnomaly(),
               PositionAngle.TRUE,
               inertialFrame,
               initialDate,
@@ -133,18 +156,22 @@ public class OrbitUtils {
       }
 
       if(outputToken.equalsIgnoreCase("lat-lon")) {
-        outputMap.put("Lat", Double.toString(OrbitUtils.cartesianToLatLon(
+        outputMap.put("lat", Double.toString(OrbitUtils.cartesianToLatLon(
                 orbit.getA(),
                 orbitPVCoordinates.getPosition().getX(),
                 orbitPVCoordinates.getPosition().getY(),
                 orbitPVCoordinates.getPosition().getZ()
         )[0]));
-        outputMap.put("Lon", Double.toString(OrbitUtils.cartesianToLatLon(
+        outputMap.put("lon", Double.toString(OrbitUtils.cartesianToLatLon(
                 orbit.getA(),
                 orbitPVCoordinates.getPosition().getX(),
                 orbitPVCoordinates.getPosition().getY(),
                 orbitPVCoordinates.getPosition().getZ()
         )[1]));
+      }
+
+      if(outputToken.equalsIgnoreCase("alt")) {
+        outputMap.put("alt", Double.toString(orbit.getA()));
       }
 
     }

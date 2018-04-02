@@ -1,5 +1,7 @@
 package com.blueapogee.model.form;
 
+import com.blueapogee.service.parameters.OrbitParameters;
+
 public class OrbitFormData extends OrbitParameters {
 
   public boolean isPrivate = true;

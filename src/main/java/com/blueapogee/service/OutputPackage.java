@@ -19,8 +19,13 @@ public class OutputPackage {
 
   public Map<String, Object> getPackage() {
     Map<String, Object> output = new HashMap<>();
-    output.put("orbit", orbit);
-    output.put("groundStations", groundStations);
+
+    if(errors.size()>0) {
+      output.put("errors", errors);
+    } else {
+      output.put("orbit", orbit);
+      output.put("groundStations", groundStations);
+    }
     return output;
   }
 

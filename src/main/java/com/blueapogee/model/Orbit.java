@@ -1,7 +1,6 @@
 package com.blueapogee.model;
 
-import com.blueapogee.model.form.OrbitFormData;
-import com.blueapogee.model.form.OrbitParameters;
+import com.blueapogee.service.parameters.OrbitParameters;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -32,6 +31,14 @@ public class Orbit {
   public double trueAnomaly = 0.0;
   public double meanAnomaly = 0.0;
 
+  public double Px;
+  public double Py;
+  public double Pz;
+
+  public double Vx;
+  public double Vy;
+  public double Vz;
+
   private String user;
 
   public Orbit() {
@@ -58,6 +65,28 @@ public class Orbit {
     this.argumentOfPerigee = argumentOfPerigee;
     this.trueAnomaly = trueAnomaly;
 
+    this.created_at = df.format(new Date());
+  }
+
+
+  public Orbit(final String name, final String fromDate, final String toDate,
+               final double Px, final double Py, final double Pz,
+               final double Vx, final double Vy, final double Vz) {
+    TimeZone tz = TimeZone.getTimeZone("UTC");
+    DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'"); // Quoted "Z" to indicate UTC, no timezone offset
+    df.setTimeZone(tz);
+
+    this.type = "Cartesian";
+    this.name = name;
+
+    this.fromDate =  fromDate.equals("") ? df.format(new Date()) : fromDate;
+    this.toDate =  toDate.equals("") ? df.format(addYear(new Date())) : toDate;
+    this.Px = Px;
+    this.Py = Py;
+    this.Pz = Pz;
+    this.Vx = Vx;
+    this.Vy = Vy;
+    this.Vz = Vz;
 
     this.created_at = df.format(new Date());
   }
@@ -162,6 +191,31 @@ public class Orbit {
 
   public void setTrueAnomaly(final double trueAnomaly) {
     this.trueAnomaly = trueAnomaly;
+  }
+
+
+  public double getPx() {
+    return Px;
+  }
+
+  public double getPy() {
+    return Py;
+  }
+
+  public double getPz() {
+    return Pz;
+  }
+
+  public double getVx() {
+    return Vx;
+  }
+
+  public double getVy() {
+    return Vy;
+  }
+
+  public double getVz() {
+    return Vz;
   }
 
   public void setCreatedOnNow() {

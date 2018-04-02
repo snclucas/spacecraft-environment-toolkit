@@ -1,4 +1,4 @@
-package com.blueapogee.controller.rest;
+package com.blueapogee.service.parameters;
 
 
 public class TLEParameters {

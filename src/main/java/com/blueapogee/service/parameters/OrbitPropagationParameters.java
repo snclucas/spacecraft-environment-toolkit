@@ -1,4 +1,4 @@
-package com.blueapogee.model.form;
+package com.blueapogee.service.parameters;
 
 
 import java.util.List;

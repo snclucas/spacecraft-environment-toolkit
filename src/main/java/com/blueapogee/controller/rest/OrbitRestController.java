@@ -2,11 +2,13 @@ package com.blueapogee.controller.rest;
 
 import com.blueapogee.model.HtplUser;
 import com.blueapogee.model.Orbit;
+import com.blueapogee.service.outputs.OrbitPackage;
+import com.blueapogee.service.parameters.GeoFieldParameters;
 import com.blueapogee.model.form.OrbitFormData;
-import com.blueapogee.model.form.OrbitPropagationParameters;
+import com.blueapogee.service.parameters.OrbitPropagationParameters;
 import com.blueapogee.service.OrbitService;
 
-import com.blueapogee.service.OutputPackage;
+import com.blueapogee.service.parameters.TLEParameters;
 import org.bson.types.*;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -23,30 +25,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 
-/*
-
-{
-    "orbit": {
-    	"type": "keplerian",
-    	"semiMajorAxis": "24396159",
-    	"eccentricity": "0.72831215",
-    	"inclination": "0.122173",
-    	"RAAN": "4.55531",
-    	"argumentOfPerigee": "3.14159",
-    	"trueAnomaly": "0.0"
-    },
-    "propagationParameters": {
-    	"initialDate": "2018-01-01T07:30:45.874",
-    	"propagator": "keplerian",
-    	"duration": 600,
-    	"stepTime": 60,
-    	"minStep": 0.001,
-    	"maxStep": 1000.0,
-    	"positionTolerance": 10
-    }
-}
-
-*/
 
 @RestController
 public class OrbitRestController {
@@ -124,6 +102,18 @@ public class OrbitRestController {
     propagateTLEOrbit(tleParameters);
   }
 
+
+  @RequestMapping(method=POST, value={"/api/model/geofield"},
+          produces={"application/json"},
+          consumes={"application/json"})
+  public Map<String, Object>  calcGeoFieldFromJSON(@RequestBody GeoFieldParameters geoFieldParameters) {
+    HtplUser user = (HtplUser) context.getAttribute("user_from_token");
+    return calcGeoField(geoFieldParameters, user);
+  }
+
+  private Map<String, Object> calcGeoField(final GeoFieldParameters geoFieldParameters, HtplUser user) {
+    return orbitService.calcGeoField(geoFieldParameters, user).getPackage();
+  }
 
 
   @RequestMapping(method = RequestMethod.POST, value={"/api/orbits/add"},

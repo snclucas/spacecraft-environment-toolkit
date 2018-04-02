@@ -1,10 +1,11 @@
 package com.blueapogee.service;
 
-import com.blueapogee.controller.rest.*;
 import com.blueapogee.model.HtplUser;
 import com.blueapogee.model.Orbit;
 import com.blueapogee.model.form.*;
 import com.blueapogee.model.repo.OrbitRepository;
+import com.blueapogee.service.parameters.*;
+import com.blueapogee.service.util.GeomagneticFieldUtils;
 import com.blueapogee.service.util.OrbitUtils;
 import org.hipparchus.ode.ODEIntegrator;
 import org.hipparchus.ode.nonstiff.*;
@@ -20,11 +21,9 @@ import org.orekit.forces.gravity.*;
 import org.orekit.forces.gravity.potential.*;
 import org.orekit.frames.*;
 import org.orekit.orbits.CircularOrbit;
-import org.orekit.orbits.KeplerianOrbit;
 import org.orekit.orbits.OrbitType;
 import org.orekit.orbits.PositionAngle;
 import org.orekit.propagation.*;
-import org.orekit.propagation.analytical.tle.*;
 import org.orekit.propagation.events.ElevationDetector;
 import org.orekit.propagation.events.EventDetector;
 import org.orekit.propagation.numerical.*;
@@ -67,26 +66,20 @@ public class OrbitService {
 	"saveOrbit": false,
     "orbit": {
     	"name": "myorbit",
-    	"type": "keplerian",
-    	"semiMajorAxis": "24396159",
-    	"eccentricity": "0.72831215",
-    	"inclination": "0.122173",
-    	"RAAN": "4.55531",
-    	"argumentOfPerigee": "3.14159",
-    	"trueAnomaly": "0.0",
-    	"Px": -6142438.668,
-    	"Py": 3492467.560,
-    	"Pz": -25767.25680,
-    	"Vx": 505.8479685,
-    	"Vy": 942.7809215,
-    	"Vz": 7435.922231
+    	"type": "KEPLERIAN",
+    	"semiMajorAxis": "42240000",
+    	"eccentricity": "0.000001",
+    	"inclination": "0.000001",
+    	"RAAN": "0",
+    	"argumentOfPerigee": "0",
+    	"trueAnomaly": "0.0"
     },
     "propagation": {
     	"initialDate": "2018-01-01T07:30:45.874",
-    	"propagator": "keplerian",
+    	"propagator": "DormandPrince",
     	"integrator": "HolmesFeatherstone",
     	"duration": 86400,
-    	"stepTime": 100,
+    	"stepTime": 3600,
     	"minStep": 0.001,
     	"maxStep": 1000.0,
     	"positionTolerance": 10
@@ -98,13 +91,6 @@ public class OrbitService {
     	"latitude": 25,
     	"altitude": 0.0,
     	"minVisibilityElevation": 5.0
-    	},
-    	{
-    	"name": "station2",
-    	"longitude": 45,
-    	"latitude": 25,
-    	"altitude": 0.0,
-    	"minVisibilityElevation": 5.0
     	}
     ],
     "output": {
@@ -112,8 +98,32 @@ public class OrbitService {
     }
 }
 
-  */
+{
+	"geoFieldModel": "IGRF",
+    "orbit": {
+    	"name": "myorbit",
+    	"type": "KEPLERIAN",
+    	"semiMajorAxis": "42240000",
+    	"eccentricity": "0.000001",
+    	"inclination": "0.000001",
+    	"RAAN": "0",
+    	"argumentOfPerigee": "0",
+    	"trueAnomaly": "0.0"
+    },
+    "propagation": {
+    	"initialDate": "2018-01-01T07:30:45.874",
+    	"propagator": "DormandPrince",
+    	"integrator": "HolmesFeatherstone",
+    	"duration": 86400,
+    	"stepTime": 3600,
+    	"minStep": 0.001,
+    	"maxStep": 1000.0,
+    	"positionTolerance": 10
+    },
+    "outputs": "F,H,X,Y,Z,I,D"
+}
 
+  */
 
 
   @Autowired
@@ -124,7 +134,8 @@ public class OrbitService {
   }
 
   public Orbit getOrbitByName(String name, final HtplUser user) {
-    return orbitRepository.findAllByNameAndUser(name, user.getUsername()).get(0);
+    List<Orbit> orbits = orbitRepository.findAllByNameAndUser(name, user.getUsername());
+    return orbits.size()>0 ? orbits.get(0) : null;
   }
 
   public Page<Orbit> getAllOrbits(HtplUser user, Sort sort, int pageNumber, int limit) {
@@ -144,7 +155,7 @@ public class OrbitService {
   public long deleteOrbit(final String orbit_id, final HtplUser user) {
     Orbit orbitToDelete = getOrbitById(orbit_id, user);
     long result = 0;
-    if(orbitToDelete != null) {
+    if (orbitToDelete != null) {
       result = orbitRepository.deleteOrbitById(orbitToDelete.id, user.getUsername());
     }
     return result;
@@ -169,13 +180,12 @@ public class OrbitService {
     OutputPackage trace = new OutputPackage();
 
     OrbitParameters orbitParameters = orbitPropagationParameters.orbit;
-    if(!OrbitUtils.checkOrbitValidity(orbitParameters)) {
+    if (!OrbitUtils.checkOrbitValidity(orbitParameters)) {
       trace.errors = OrbitUtils.makeErrorOutput("Bad orbit");
       return trace;
     }
 
     PropagationParameters propagationParams = orbitPropagationParameters.getPropagationParameters();
-    OutputParameters outputParameters = orbitPropagationParameters.output;
 
     try {
       Frame inertialFrame = FramesFactory.getEME2000();
@@ -184,9 +194,9 @@ public class OrbitService {
       AbsoluteDate initialDate = new AbsoluteDate(propagationParams.initialDate, utc);
 
       org.orekit.orbits.Orbit initialOrbit;
-      if(orbitPropagationParameters.loadOrbit && !orbitParameters.name.equals("")) {
+      if (orbitPropagationParameters.loadOrbit && !orbitParameters.name.equals("")) {
         Orbit orbit = getOrbitByName(orbitParameters.name, user);
-        if(orbit == null) {
+        if (orbit == null) {
           trace.errors = (OrbitUtils.makeErrorOutput("No orbit found with name {" + orbitParameters.name + "}"));
           return trace;
         }
@@ -203,58 +213,76 @@ public class OrbitService {
                 initialDate,
                 propagationParams.mu);
       } else {
-        initialOrbit = OrbitUtils.getOrbit(orbitParameters, inertialFrame, initialDate, propagationParams.mu);
+        initialOrbit = OrbitUtils.getOrbitFromParameters(orbitParameters, inertialFrame, initialDate, propagationParams.mu);
       }
 
-      if(orbitPropagationParameters.saveOrbit && !orbitParameters.name.equals("")) {
+      if (orbitPropagationParameters.saveOrbit && !orbitParameters.name.equals("")) {
         saveOrbit(orbitParameters, user);
       }
 
-      // Initial state definition
-      SpacecraftState initialState = new SpacecraftState(initialOrbit);
+      trace = propagateOrbit(initialOrbit, orbitPropagationParameters.propagation, orbitPropagationParameters.output,
+              orbitPropagationParameters.groundstation, initialDate);
 
-      OrbitType propagationType;
-      if(orbitParameters.type.equalsIgnoreCase("equinoctal")) {
-        propagationType = OrbitType.EQUINOCTIAL;
-      } else if(orbitParameters.type.equalsIgnoreCase("cartesian")) {
-        propagationType = OrbitType.CARTESIAN;
-      } else if(orbitParameters.type.equalsIgnoreCase("circular")) {
-        propagationType = OrbitType.CIRCULAR;
-      } else {
-        propagationType = OrbitType.KEPLERIAN;
-      }
+    } catch (OrekitException e) {
+      e.printStackTrace();
+    }
+    return trace;
+  }
 
+
+  public OutputPackage propagateOrbit(final org.orekit.orbits.Orbit initialOrbit,
+                                       final PropagationParameters propagationParameters,
+                                       final OutputParameters outputParameters,
+                                       final List<GroundStationParameters> groundStationParameters,
+                                       final AbsoluteDate initialDate) {
+    OutputPackage trace = new OutputPackage();
+
+    OrbitType propagationType;
+    if (initialOrbit.getType().toString().equalsIgnoreCase("equinoctal")) {
+      propagationType = OrbitType.EQUINOCTIAL;
+    } else if (initialOrbit.getType().toString().equalsIgnoreCase("cartesian")) {
+      propagationType = OrbitType.CARTESIAN;
+    } else if (initialOrbit.getType().toString().equalsIgnoreCase("circular")) {
+      propagationType = OrbitType.CIRCULAR;
+    } else {
+      propagationType = OrbitType.KEPLERIAN;
+    }
+
+    try {
       double[][] tolerances =
-              NumericalPropagator.tolerances(propagationParams.positionTolerance, initialOrbit, propagationType);
+              NumericalPropagator.tolerances(propagationParameters.positionTolerance, initialOrbit, propagationType);
 
       ODEIntegrator integrator;
-      if(propagationParams.integrator.equalsIgnoreCase("DormandPrince")) {
+      if (propagationParameters.integrator.equalsIgnoreCase("DormandPrince")) {
         integrator =
-                new DormandPrince853Integrator(propagationParams.minStep, propagationParams.maxStep, tolerances[0], tolerances[1]);
+                new DormandPrince853Integrator(propagationParameters.minStep, propagationParameters.maxStep, tolerances[0], tolerances[1]);
       } else {
-        integrator = new ClassicalRungeKuttaIntegrator(propagationParams.stepTime);
+        integrator = new ClassicalRungeKuttaIntegrator(propagationParameters.stepTime);
       }
 
       NumericalPropagator propagator = new NumericalPropagator(integrator);
       propagator.setOrbitType(propagationType);
 
       ForceModel forceModel;
-      if(propagationParams.forceModel.equalsIgnoreCase("HolmesFeatherstone")) {
+      if (propagationParameters.forceModel.equalsIgnoreCase("HolmesFeatherstone")) {
         NormalizedSphericalHarmonicsProvider provider =
                 GravityFieldFactory.getNormalizedProvider(10, 10);
         forceModel = new HolmesFeatherstoneAttractionModel(
                 FramesFactory.getITRF(IERSConventions.IERS_2010, true), provider);
         propagator.addForceModel(forceModel);
       } else {
-        forceModel = new NewtonianAttraction(propagationParams.mu);
+        forceModel = new NewtonianAttraction(propagationParameters.mu);
         propagator.addForceModel(forceModel);
       }
 
-      propagator.setMasterMode(propagationParams.stepTime, new StepHandler(trace, outputParameters));
+      propagator.setMasterMode(propagationParameters.stepTime, new StepHandler(trace, outputParameters));
+
+      // Initial state definition
+      SpacecraftState initialState = new SpacecraftState(initialOrbit);
       propagator.setInitialState(initialState);
 
-      if(orbitPropagationParameters.groundstation != null) {
-        for (GroundStationParameters gsp : orbitPropagationParameters.groundstation) {
+      if (groundStationParameters != null) {
+        for (GroundStationParameters gsp : groundStationParameters) {
           double longitude = FastMath.toRadians(gsp.longitude);
           double latitude = FastMath.toRadians(gsp.latitude);
           double altitude = gsp.altitude;
@@ -273,33 +301,33 @@ public class OrbitService {
           double maxCheck = 60.0;
           double threshold = 0.001;
           EventDetector staVisi = new ElevationDetector(maxCheck, threshold, staFrame).
-                          withConstantElevation(gsp.minVisibilityElevation).
-                          withHandler(new VisibilityHandler(gsp.name, trace));
+                  withConstantElevation(gsp.minVisibilityElevation).
+                  withHandler(new VisibilityHandler(gsp.name, trace));
 
           propagator.addEventDetector(staVisi);
         }
       }
       SpacecraftState finalState =
-              propagator.propagate(new AbsoluteDate(initialDate, propagationParams.duration));
+              propagator.propagate(new AbsoluteDate(initialDate, propagationParameters.duration));
 
-    } catch (OrekitException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+
     }
+
     return trace;
   }
 
-  public void propagateTLEOrbit(TLEParameters tleParameters, HtplUser user) {
 
+  public void propagateTLEOrbit(TLEParameters tleParameters, HtplUser user) {
     try {
       TLE tle = new TLE(tleParameters.tleLine1, tleParameters.tleLine2);
-
       Propagator p = TLEPropagator.selectExtrapolator(tle);
 
-      List<SpacecraftState> sample = new ArrayList<>();
+      //List<SpacecraftState> sample = new ArrayList<>();
       for (double dt = 0; dt < tleParameters.duration; dt += tleParameters.stepTime) {
         SpacecraftState s = p.propagate(tle.getDate().shiftedBy(dt));
         System.out.println(s.getDate().toString() + " " + s.getA());
-        sample.add(s);
+        //sample.add(s);
       }
 
     } catch (OrekitException e) {
@@ -307,5 +335,9 @@ public class OrbitService {
     }
 
 
+  }
+
+  public OutputPackage calcGeoField(final GeoFieldParameters geoFieldParameters, HtplUser user) {
+   return GeomagneticFieldUtils.calcGeoField(this, geoFieldParameters, user);
   }
 }

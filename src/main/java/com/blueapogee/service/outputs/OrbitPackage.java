@@ -1,4 +1,4 @@
-package com.blueapogee.controller.rest;
+package com.blueapogee.service.outputs;
 
 
 import com.blueapogee.model.*;
@@ -13,6 +13,5 @@ public class OrbitPackage {
     this.status = status;
     this.orbit = orbit;
   }
-
 
 }
