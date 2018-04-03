@@ -4,6 +4,7 @@ package com.blueapogee.service.util;
 import com.blueapogee.model.HtplUser;
 import com.blueapogee.model.Orbit;
 import com.blueapogee.service.OrbitService;
+import com.blueapogee.service.outputs.OrbitPackage;
 import com.blueapogee.service.outputs.OutputPackage;
 import com.blueapogee.service.parameters.GeoFieldParameters;
 import com.blueapogee.service.parameters.OutputParameters;
@@ -20,6 +21,29 @@ import org.orekit.time.TimeScalesFactory;
 import java.util.Map;
 
 public class GeomagneticFieldUtils {
+
+
+  public static GeoMagneticElements calcField(AbsoluteDate initialDate, String modelToRun,
+                                   double longitude, double latitude, double altitude) throws OrekitException {
+    Frame inertialFrame = FramesFactory.getEME2000();
+    TimeScale utc = TimeScalesFactory.getUTC();
+
+    double year = GeoMagneticField.getDecimalYear(
+            initialDate.getComponents(utc).getDate().getDay(),
+            initialDate.getComponents(utc).getDate().getMonth(),
+            initialDate.getComponents(utc).getDate().getYear());
+
+    if(year > 2015.0) {
+      year = 2015.0;
+    }
+
+    GeoMagneticField model = modelToRun.equalsIgnoreCase("WMM")
+            ? GeoMagneticFieldFactory.getWMM(year)
+            : GeoMagneticFieldFactory.getIGRF(year);
+
+    return model.calculateField(longitude, latitude, altitude);
+  }
+
 
   public static OutputPackage calcGeoField(final OrbitService orbitService, final GeoFieldParameters geoFieldParameters, HtplUser user) {
     OutputPackage trace = new OutputPackage();
@@ -61,29 +85,18 @@ public class GeomagneticFieldUtils {
             initialDate);
 
     for(Map<String, String> orbitData: propOutput.orbit) {
-      double year = GeoMagneticField.getDecimalYear(
-              initialDate.getComponents(utc).getDate().getDay(),
-              initialDate.getComponents(utc).getDate().getMonth(),
-              initialDate.getComponents(utc).getDate().getYear());
-
-      if(year > 2015.0) {
-        year = 2015.0;
-      }
-
-      GeoMagneticField model;
-      try {
-        model = geoFieldParameters.geoFieldModel.equalsIgnoreCase("WMM")
-                ? GeoMagneticFieldFactory.getWMM(year)
-                : GeoMagneticFieldFactory.getIGRF(year);
-      } catch (OrekitException e) {
-        trace.errors = (OrbitUtils.makeErrorOutput("Error getting GeoMagneticField data"));
-        return trace;
-      }
 
       double lon = Double.parseDouble(orbitData.get("lon"));
       double lat = Double.parseDouble(orbitData.get("lat"));
       double alt = Double.parseDouble(orbitData.get("alt"));
-      GeoMagneticElements result = model.calculateField(lon, lat, alt);
+
+
+      GeoMagneticElements result = null;
+      try {
+        result = calcField(initialDate, geoFieldParameters.geoFieldModel, lon, lat, alt);
+      } catch (OrekitException e) {
+        e.printStackTrace();
+      }
 
       String output = geoFieldParameters.outputs.trim().replace(" ", "");
       String[] outputs = output.split(",");
