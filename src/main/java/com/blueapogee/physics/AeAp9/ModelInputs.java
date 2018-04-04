@@ -136,8 +136,10 @@ public class ModelInputs {
 
   }
 
+  List<ModelInput> modelInputs = new ArrayList<>();
+
   public void addModelInput(final String name, T value, String comment) {
-    this.modelDB = modelDB;
+    modelInputs.add(new BasicModelInput(name, value, comment))
   }
 
   public ModelTypeChoice getModelType() {
@@ -288,7 +290,7 @@ public class ModelInputs {
   public static void main(String[] args) {
     ModelInputs modelInputs = new ModelInputs();
 
-
+    modelInputs.addModelInput("ds", "sdsd", "sdsds");
 
     modelInputs.setModelType(ModelTypeChoice.AE9);
     modelInputs.setModelDB("../../modelData/AP9V15_runtime_tables.mat");
@@ -337,20 +339,53 @@ class FluxOut {
 
 }
 
-class BasicModelInput<T> implements ModelInput {
+class BasicModelInput implements ModelInput {
 
   private final String name;
-  private final T value;
+  private final String value;
   private final String comment;
 
-  public BasicModelInput(final String name, final T value, final String comment) {
+  public BasicModelInput(final String name, final String value, final String comment) {
     this.name = name;
     this.value = value;
     this.comment = comment;
   }
 
   @Override
-  public T getValue() {
+  public String getValue() {
+    return value;
+  }
+
+  @Override
+  public String getComment() {
+    return comment;
+  }
+
+  @Override
+  public String getStringOutput() {
+    StringBuilder output = new StringBuilder();
+    output.append("# " + comment).append(System.lineSeparator());
+    output.append(name + ": " + getValue()).append(System.lineSeparator());
+    return output.toString();
+  }
+}
+
+class ClosedSetModelInput implements ModelInput {
+
+  private final String name;
+  private final String value;
+  private final String[] allowedValues;
+  private final String comment;
+
+  public ClosedSetModelInput(final String name, final String[] allowedValues, final String value, final String comment) {
+    this.name = name;
+    this.allowedValues = allowedValues;
+    this.value = value;
+    this.comment = comment;
+  }
+
+  @Override
+  public String getValue() {
     return value;
   }
 
