@@ -1,26 +1,89 @@
 package com.blueapogee.physics.AeAp9;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.springframework.data.mongodb.core.aggregation.ArithmeticOperators;
+import org.springframework.ui.Model;
+
+import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ModelInputs {
 
-  public enum ModelTypeChoice {
-    AE9,
-    AP9,
-    Plasma,
-    AE8,
-    AP8
+  static BiPredicate<String, Double[]> predicateFluxOut = (l,s) -> {
+    boolean returnValue = true;
+    String[] tokens = l.trim().split(",");
+
+    if(tokens.length<2) {
+      return false;
+    } else {
+      for(int i = 1;i<tokens.length;i++) {
+        double val = Double.parseDouble(tokens[i]);
+        if(val<s[0] && val>s[1]) {
+          returnValue = false;
+        }
+      }
+    }
+    return returnValue;
+  };
+
+  static BiPredicate<Double[], Double> predicateNumberRange = (l,s) -> {
+    return s>l[0] && s<l[1];
+  };
+
+  static BiPredicate<List<String>, String> predicateStringList = (l,s) -> l.stream().anyMatch(str -> str.trim().equals(s));
+
+  public enum ModelInput {
+    ModelType("ModelType", predicateStringList, Arrays.asList("AP9", "AE9", "AE8", "AP8", "Plasma"), true, ""),
+    ModelDB("ModelDB", predicateStringList, Collections.EMPTY_LIST, true, ""),
+    MagfieldDB("MagfieldDB", predicateStringList, Collections.EMPTY_LIST, true, ""),
+    KPhiNNetDB("KPhiNNetDB", predicateStringList, Collections.EMPTY_LIST, true, ""),
+    KHminNNetDB("KHminNNetDB", predicateStringList, Collections.EMPTY_LIST, true, ""),
+    FluxType("FluxType", predicateStringList, Arrays.asList("OnePtDiff", "TwoPtDiff", "Integral"), true, ""),
+
+    FluxOut("FluxOut", predicateStringList, Arrays.asList("Mean", "Percentile", "Perturbed", "MonteCarlo"), true, ""),
+
+    OutFile("OutFile", Collections.EMPTY_LIST, true, ""),
+    OrbitFile("OrbitFile", Collections.EMPTY_LIST, true, "");
+
+    private final String name;
+    private final List<String> allowedValues;
+    private final BiPredicate predicate;
+    private final boolean required;
+    private final String defaultValue;
+
+    ModelInput(String name, BiPredicate<List<String>,String> predicate, final List<String> allowedValues,
+               boolean required, String defaultValue) {
+      this.name = name;
+      this.allowedValues = allowedValues;
+      this.predicate = predicate;
+      this.required = required;
+      this.defaultValue = defaultValue;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public String getDefault() {
+      return defaultValue;
+    }
+
+    public boolean isValid(String text) {
+      return predicateStringList.test(allowedValues, text);
+    }
+
   }
 
-  public enum FluxTypeChoice {
-    OnePtDiff,
-    TwoPtDiff,
-    Integral
+  private Map<ModelInput, String[]> modelInputs = new LinkedHashMap<>();
+
+  {
+//    addModelInput(ModelInput.ModelType, "");
+    modelInputs = Arrays.stream(ModelInput.values()).collect(
+            Collectors.toMap(x -> x, x -> new String[]{"",""}));
   }
+
 
   public enum TimeSpecChoice {
     MJD,
@@ -60,15 +123,10 @@ public class ModelInputs {
 
 
   // Basic inputs
-  public ModelTypeChoice modelType;
-  public BasicModelInput<String> modelDB;
-  public String magFieldDB;
-  public String KPhiNNetDB;
-  public String KHminNNetDB;
-  public String outFile;
-  public String orbitFile;
 
-  public FluxTypeChoice fluxType;
+
+
+
 
   public List<Double> energies = new ArrayList<>();
   public List<Double> energies2 = new ArrayList<>();
@@ -97,23 +155,23 @@ public class ModelInputs {
 
   private void checkInputs() {
 
-    if(modelType == null) {
-      throw new IllegalArgumentException("ModelType is required");
-    }
+   // if(modelType == null) {
+    //  throw new IllegalArgumentException("ModelType is required");
+    //}
 
-    if(modelDB == null) {
-      throw new IllegalArgumentException("ModelDB is required");
-    }
+   // if(modelDB == null) {
+   ///   throw new IllegalArgumentException("ModelDB is required");
+    //}
 
-    if (fluxType == FluxTypeChoice.TwoPtDiff && energies.size() == 0 && energies2.size() == 0) {
-      throw new IllegalArgumentException("Two-point differential requires ‘Energies’ and ‘Energies2’ parameter values.");
-    }
+    //if (fluxType == FluxTypeChoice.TwoPtDiff && energies.size() == 0 && energies2.size() == 0) {
+    //  throw new IllegalArgumentException("Two-point differential requires ‘Energies’ and ‘Energies2’ parameter values.");
+    //}
 
     for(FluxOut fluxOut: fluxOutEntries) {
-      if (modelType == ModelTypeChoice.Plasma &&
-              fluxOut.getFluxOutChoice() == FluxOut.FluxOutChoice.MonteCarlo) {
-        throw new IllegalArgumentException("FluxType: MonteCarlo is not applicable for ModelType: Plasma");
-      }
+    //  if (modelType == ModelTypeChoice.Plasma &&
+     //         fluxOut.getFluxOutChoice() == FluxOut.FluxOutChoice.MonteCarlo) {
+     //   throw new IllegalArgumentException("FluxType: MonteCarlo is not applicable for ModelType: Plasma");
+     // }
 
       for (String val : fluxOut.getValuesList()) {
         // Check for range
@@ -136,76 +194,32 @@ public class ModelInputs {
 
   }
 
-  List<ModelInput> modelInputs = new ArrayList<>();
 
-  public void addModelInput(final String name, T value, String comment) {
-    modelInputs.add(new BasicModelInput(name, value, comment))
+  public void addModelInput(final ModelInput modelInput, String value, String comment) {
+    if(modelInput.isValid(value)) {
+      modelInputs.put(modelInput, new String[]{value, comment});
+    } else {
+      if(modelInput.allowedValues.size()>0) {
+        throw new IllegalArgumentException(modelInput.name() + " input can only take the following values: " +
+                listToString(modelInput.allowedValues));
+      } else {
+        throw new IllegalArgumentException(modelInput.name() + " input cannot be empty.");
+      }
+    }
+
   }
 
-  public ModelTypeChoice getModelType() {
-    return modelType;
+  public void addModelInput(final ModelInput modelInput, String value) {
+    addModelInput(modelInput, value, "");
   }
 
-  public void setModelType(final ModelTypeChoice modelType) {
-    this.modelType = modelType;
-  }
-
-  public BasicModelInput<String> getModelDB() {
-    return modelDB;
-  }
-
-  public void setModelDB(final String namemodelDB) {
-    this.modelDB = modelDB;
-  }
-
-  public String getMagFieldDB() {
-    return magFieldDB;
-  }
-
-  public void setMagFieldDB(final String magFieldDB) {
-    this.magFieldDB = magFieldDB;
-  }
-
-  public String getKPhiNNetDB() {
-    return KPhiNNetDB;
-  }
-
-  public void setKPhiNNetDB(final String KPhiNNetDB) {
-    this.KPhiNNetDB = KPhiNNetDB;
-  }
-
-  public String getKHminNNetDB() {
-    return KHminNNetDB;
-  }
-
-  public void setKHminNNetDB(final String KHminNNetDB) {
-    this.KHminNNetDB = KHminNNetDB;
-  }
-
-  public String getOutFile() {
-    return outFile;
-  }
-
-  public void setOutFile(final String outFile) {
-    this.outFile = outFile;
-  }
-
-  public String getOrbitFile() {
-    return orbitFile;
-  }
-
-  public void setOrbitFile(final String orbitFile) {
-    this.orbitFile = orbitFile;
+  private String listToString(List<String> list) {
+    return list.stream().map(Object::toString).collect(Collectors.joining(","));
   }
 
 
-  public FluxTypeChoice getFluxType() {
-    return fluxType;
-  }
 
-  public void setFluxType(final FluxTypeChoice fluxType) {
-    this.fluxType = fluxType;
-  }
+
 
   public List<Double> getEnergiesAsList() {
     return energies;
@@ -278,26 +292,48 @@ public class ModelInputs {
   }
 
 
+
   public String getInputFile() {
     StringBuilder inputFileBuilder = new StringBuilder();
-    inputFileBuilder.append("ModelType:").append(this.getModelType()).append(System.lineSeparator());
-    inputFileBuilder.append("ModelDB:").append(this.getModelDB()).append(System.lineSeparator());
+
+    for (Map.Entry<ModelInput, String[]> entry : modelInputs.entrySet()) {
+
+      if(!entry.getKey().isValid(entry.getValue()[0])) {
+        if(entry.getKey().allowedValues.size()>0) {
+          throw new IllegalArgumentException(entry.getKey().name() + " input can only take the following values: " +
+                  listToString(entry.getKey().allowedValues));
+        } else {
+          throw new IllegalArgumentException(entry.getKey().name() + " input cannot be empty.");
+        }
+      }
+
+      if(!entry.getValue()[1].equalsIgnoreCase("")) {
+        inputFileBuilder.append("# " + entry.getValue()[1]).append(System.lineSeparator());
+      }
+      inputFileBuilder.append(entry.getKey().name() + ": ").append(entry.getValue()[0]).append(System.lineSeparator());
+
+      // if("something".equals(entry.getValue())){
+     //   result = entry.getValue();
+     // }
+    }
+
+   // modelInputs.entrySet().stream()
+    //        .map()
+    //        .filter(map -> map.getKey() == 2)
+     //       .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
+
+   // inputFileBuilder.append("ModelType:").append(this.getModelType()).append(System.lineSeparator());
+   // inputFileBuilder.append("ModelDB:").append(this.getModelDB()).append(System.lineSeparator());
 
     return inputFileBuilder.toString();
   }
 
 
-  public static void main(String[] args) {
-    ModelInputs modelInputs = new ModelInputs();
+  public void getModelInputValue(ModelInput input) {
+    if(modelInputs.containsKey(input)) {
 
-    modelInputs.addModelInput("ds", "sdsd", "sdsds");
-
-    modelInputs.setModelType(ModelTypeChoice.AE9);
-    modelInputs.setModelDB("../../modelData/AP9V15_runtime_tables.mat");
-    modelInputs.checkInputs();
-    System.out.println(modelInputs.getInputFile());
+    }
   }
-
 
 
 }
