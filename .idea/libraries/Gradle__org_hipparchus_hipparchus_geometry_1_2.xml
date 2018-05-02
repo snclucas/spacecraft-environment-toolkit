@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.hipparchus:hipparchus-geometry:1.2">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hipparchus/hipparchus-geometry/1.2/944999450fdf417955c85f6561d0c4b8715b613f/hipparchus-geometry-1.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hipparchus/hipparchus-geometry/1.2/7c3f96ac2fc008f6687ad64e8a8b7725de9fb4bc/hipparchus-geometry-1.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

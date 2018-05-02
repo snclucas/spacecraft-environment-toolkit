@@ -32,7 +32,11 @@ public class ModelInputs {
     return s>l[0] && s<l[1];
   };
 
-  static BiPredicate<List<String>, String> predicateStringList = (l,s) -> l.stream().anyMatch(str -> str.trim().equals(s));
+  static BiPredicate<List<String>, String> predicateStringList = (l,s) ->
+          l.stream().anyMatch(str -> str.trim().equals(s)) ||
+          l.size() == 0;
+
+  static Predicate<String> predicateIsString = s -> s.length() > 0;
 
   public enum ModelInput {
     ModelType("ModelType", predicateStringList, Arrays.asList("AP9", "AE9", "AE8", "AP8", "Plasma"), true, ""),
@@ -44,8 +48,12 @@ public class ModelInputs {
 
     FluxOut("FluxOut", predicateStringList, Arrays.asList("Mean", "Percentile", "Perturbed", "MonteCarlo"), true, ""),
 
-    OutFile("OutFile", Collections.EMPTY_LIST, true, ""),
-    OrbitFile("OrbitFile", Collections.EMPTY_LIST, true, "");
+    OutFile("OutFile", predicateStringList, Collections.EMPTY_LIST, true, ""),
+    OrbitFile("OrbitFile", predicateStringList, Collections.EMPTY_LIST, true, ""),
+
+    Energies("Energies", predicateStringList, Collections.EMPTY_LIST, true,
+            "0.04,0.07,0.1,0.25,0.5,0.75,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,8.5,10");
+
 
     private final String name;
     private final List<String> allowedValues;
@@ -62,6 +70,12 @@ public class ModelInputs {
       this.defaultValue = defaultValue;
     }
 
+    //public static ModelInput numberListInput(String numberList, double lowerLimit, double upperLimit) {
+    //  BiPredicate<Double[], Double> predicateNumberRange = (l,s) -> {
+    //    return s>l[0] && s<l[1];
+    //  };
+    //}
+
     public String getName() {
       return name;
     }
@@ -71,6 +85,10 @@ public class ModelInputs {
     }
 
     public boolean isValid(String text) {
+      if(required) {
+        if(getDefault().equals(""))
+          return text.length() > 0;
+      }
       return predicateStringList.test(allowedValues, text);
     }
 
@@ -81,7 +99,7 @@ public class ModelInputs {
   {
 //    addModelInput(ModelInput.ModelType, "");
     modelInputs = Arrays.stream(ModelInput.values()).collect(
-            Collectors.toMap(x -> x, x -> new String[]{"",""}));
+            Collectors.toMap(x -> x, x -> new String[]{x.getDefault(),""}));
   }
 
 

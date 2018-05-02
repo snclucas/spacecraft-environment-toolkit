@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.hipparchus:hipparchus-fitting:1.2">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hipparchus/hipparchus-fitting/1.2/bf37785ba3cf5dada9b8479edffc843afa5027a/hipparchus-fitting-1.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hipparchus/hipparchus-fitting/1.2/b07d0981af7731141f9df71099b21e8508925414/hipparchus-fitting-1.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

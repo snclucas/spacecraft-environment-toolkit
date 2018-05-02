@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.hipparchus:hipparchus-ode:1.2">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hipparchus/hipparchus-ode/1.2/5fa3c7edb2dcb495da309ae76a0836802cfa0454/hipparchus-ode-1.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hipparchus/hipparchus-ode/1.2/3143c9a4fccbe7f1996ced51e02277780f3150b0/hipparchus-ode-1.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

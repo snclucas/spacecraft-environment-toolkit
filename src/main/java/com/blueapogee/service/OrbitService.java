@@ -8,6 +8,8 @@ import com.blueapogee.service.outputs.OutputPackage;
 import com.blueapogee.service.parameters.*;
 import com.blueapogee.service.util.GeomagneticFieldUtils;
 import com.blueapogee.service.util.OrbitUtils;
+import com.blueapogee.service.validators.OrbitPropagationValidator;
+import com.blueapogee.service.validators.ValidationResult;
 import org.hipparchus.ode.ODEIntegrator;
 import org.hipparchus.ode.nonstiff.*;
 import org.hipparchus.util.FastMath;
@@ -187,6 +189,14 @@ public class OrbitService {
     }
 
     PropagationParameters propagationParams = orbitPropagationParameters.getPropagationParameters();
+    ValidationResult result = OrbitPropagationValidator.validate(propagationParams);
+
+    if(!result.success) {
+      trace.errors = (OrbitUtils.makeErrorOutput("Orbit propagation parameters failed validation." +
+              System.lineSeparator() + result.message));
+      return trace;
+    }
+
 
     try {
       Frame inertialFrame = FramesFactory.getEME2000();
@@ -220,6 +230,8 @@ public class OrbitService {
       if (orbitPropagationParameters.saveOrbit && !orbitParameters.name.equals("")) {
         saveOrbit(orbitParameters, user);
       }
+
+
 
       trace = propagateOrbit(initialOrbit, orbitPropagationParameters.propagation, orbitPropagationParameters.output,
               orbitPropagationParameters.groundstation, initialDate);

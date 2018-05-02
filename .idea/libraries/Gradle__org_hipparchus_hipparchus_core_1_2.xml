@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.hipparchus:hipparchus-core:1.2">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hipparchus/hipparchus-core/1.2/60453be6402cc69c70a33be0947238cacc3b86fe/hipparchus-core-1.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hipparchus/hipparchus-core/1.2/c368ff63128b209b1f5b3d25e354b0993e743458/hipparchus-core-1.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

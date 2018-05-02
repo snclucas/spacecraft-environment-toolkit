@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: org.orekit:orekit:9.1">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.orekit/orekit/9.1/b6f43cddb59030178351ea5143cbd1b4366fec9f/orekit-9.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.orekit/orekit/9.1/4caa2a536355a2a1949a3351b345daabac550e1f/orekit-9.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
