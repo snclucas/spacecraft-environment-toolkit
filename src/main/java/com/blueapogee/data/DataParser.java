@@ -16,7 +16,7 @@ public class DataParser {
     }
   }
 
-  public static void processURl(String urlStr, DataSet dataSet) {
+  static void processURL(String urlStr, DataSet dataSet) {
     try {
       URL url = new URL(urlStr);
       BufferedReader in = new BufferedReader(
@@ -28,7 +28,7 @@ public class DataParser {
     }
   }
 
-  public static void process(final BufferedReader bufferedReader, final DataSet dataSet) throws IOException {
+  private static void process(final BufferedReader bufferedReader, final DataSet dataSet) throws IOException {
     String inputLine;
     while ((inputLine = bufferedReader.readLine()) != null) {
       dataSet.processRow(inputLine);
