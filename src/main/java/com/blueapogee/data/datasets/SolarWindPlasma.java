@@ -20,10 +20,10 @@ public class SolarWindPlasma extends AbstractDataSet {
   }
 
   private void buildDataSet() {
-    addColumn(new DataValueType<>("time_tag", "The year", -9999));
-    addColumn(new DataValueType<>("density", "Density", -9999));
-    addColumn(new DataValueType<>("speed", "Speed", -9999));
-    addColumn(new DataValueType<>("temperature", "Temperature", -9999));
+    addColumnType(new DataValueType<>("time_tag", "The year", -9999));
+    addColumnType(new DataValueType<>("density", "Density", -9999));
+    addColumnType(new DataValueType<>("speed", "Speed", -9999));
+    addColumnType(new DataValueType<>("temperature", "Temperature", -9999));
   }
 
   @Override

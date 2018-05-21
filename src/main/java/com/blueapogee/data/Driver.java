@@ -20,13 +20,13 @@ public class Driver {
     DataParser.processURL(url, dataSet);
 
     System.out.println( dataSet.dateProvider(dataSet.getRow(0))     );
-
+    System.out.println( dataSet.getRow(0)     );
     dataSet.writeJSON();
 
     String h = "";
 
-    SolarWindPlasma swPlasma = new SolarWindPlasma("", false);
-    swPlasma.processRow("");
+   // SolarWindPlasma swPlasma = new SolarWindPlasma("", false);
+   // swPlasma.processRow("");
 
   }
 

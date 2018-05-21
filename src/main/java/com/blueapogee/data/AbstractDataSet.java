@@ -17,18 +17,21 @@ public abstract class AbstractDataSet implements DataSet {
   private int rowCount = 0;
   private int columnCount = 0;
   private final Map<String, DataValueType> columnTypes;
-  private final Map<Integer, DataRow> rowValues;
-  private final Map<Integer, Integer> columnFillCount;
 
+  private final Map<Integer, Integer> columnFillCount;
+  private final Map<Integer, List<DataValue>> columns;
 
   public AbstractDataSet(final String description, final boolean addDateColumn) {
     this.description = description;
     this.addDateColumn = addDateColumn;
     this.columnTypes = new LinkedHashMap<>();
+    this.columns = new LinkedHashMap<>();
     if(addDateColumn) {
       this.columnTypes.put("Date", new DataValueType<>("Date", "The date", LocalDateTime.MIN));
+      columns.put(0, new LinkedList<>());
+      columnCount++;
     }
-    this.rowValues = new LinkedHashMap<>();
+   // this.rowValues = new LinkedHashMap<>();
     this.columnFillCount = new LinkedHashMap<>();
   }
 
@@ -37,7 +40,7 @@ public abstract class AbstractDataSet implements DataSet {
     mapperObj.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
     mapperObj.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
     try {
-      mapperObj.writeValue(new File("D:/dataTwo.json"), rowValues.get(0));
+      mapperObj.writeValue(new File("D:/dataTwo.json"), getRow(0));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -56,11 +59,22 @@ public abstract class AbstractDataSet implements DataSet {
 
   @Override
   public DataRow getRow(int index) {
-    return rowValues.get(index);
+    DataRow dr = new DataRow();
+
+    for(int i = 0;i< columns.entrySet().size();i++) {
+      List<DataValue> dvl = columns.get(i);
+      dr.addDataValue(getColumnType(i).getName(), dvl.get(index));
+    }
+    return dr;
   }
 
   @Override
   public void addRow(final DataRow dataRow) {
+
+    if(addDateColumn) {
+      getColumn(0).add(dateProvider(dataRow));
+    }
+
     int initialDateColumn = addDateColumn ? 1 : 0;
     if(dataRow.getValues().size() != (columnTypes.size()) - initialDateColumn) {
       throw new IllegalArgumentException("Values and columns size must be the same size");
@@ -68,27 +82,28 @@ public abstract class AbstractDataSet implements DataSet {
 
     int columnIndex = addDateColumn ? 1 : 0;
     for(DataValue value : dataRow.getValues().values()) {
-      if(!getColumn(columnIndex).getFill().getClass().getSimpleName().equalsIgnoreCase(value.getData().getClass().getSimpleName())) {
+      if(!getColumnType(columnIndex).getFill().getClass().getSimpleName().equalsIgnoreCase(value.getData().getClass().getSimpleName())) {
         throw new IllegalArgumentException("Column " + columnIndex + " type not what it should be ");
       }
+      getColumn(columnIndex).add(value);
       columnIndex++;
     }
-
-    if(addDateColumn) {
-      dataRow.addColumn(0, "Date", dateProvider(dataRow));
-    }
-    rowValues.put(rowCount, dataRow);
     rowCount++;
   }
 
   protected void addColumn(DataValueType type) {
+
+  }
+
+  protected void addColumnType(DataValueType type) {
     columnTypes.put(type.getName(), type);
+    columns.put(columnCount, new LinkedList<>());
     columnCount++;
   }
 
   public void setColumnTypes(DataValueType[] types) {
     for(DataValueType type : types) {
-      addColumn(type);
+      addColumnType(type);
     }
   }
 
@@ -97,7 +112,7 @@ public abstract class AbstractDataSet implements DataSet {
     if(hasDuplicate(columns)){
       throw new IllegalArgumentException("Duplicate column name exists");
     }
-    columns.forEach(this::addColumn);
+    columns.forEach(this::addColumnType);
   }
 
   private static <T> boolean hasDuplicate(Iterable<T> all) {
@@ -108,13 +123,21 @@ public abstract class AbstractDataSet implements DataSet {
     return false;
   }
 
-  public DataValueType getColumn(String columnName) {
+  public DataValueType getColumnType(String columnName) {
     return columnTypes.get(columnName);
   }
 
-  private DataValueType getColumn(int columnIndex) {
+  private DataValueType getColumnType(int columnIndex) {
     String[] keyArray = columnTypes.keySet().toArray(new String[0]);
     return columnTypes.get(keyArray[columnIndex]);
+  }
+
+  public List<DataValue> getColumn(int columnIndex) {
+    return columns.get(columnIndex);
+  }
+
+  public void getColumnData() {
+
   }
 
   @Override
@@ -132,14 +155,14 @@ public abstract class AbstractDataSet implements DataSet {
     DataRow dataRow = new DataRow();
     StringTokenizer tokenizer = new StringTokenizer(dataRowStr);
 
-    if(getColumnCount() != tokenizer.countTokens()) {
+    if(getColumnCount() != (tokenizer.countTokens() + (addDateColumn ? 1 : 0))) {
       throw new IllegalArgumentException("String data tokens not equal to column count");
     }
 
     int col = 1;
     while(tokenizer.hasMoreTokens()) {
       String token = tokenizer.nextToken();
-      Class type = getColumn(col).getType();
+      Class type = getColumnType(col).getType();
       DataValue val = null;
 
       if(type.equals(Integer.class)) {
@@ -155,7 +178,7 @@ public abstract class AbstractDataSet implements DataSet {
         setFillCounts(col, token);
       }
 
-      dataRow.addDataValue(getColumn(col).getName(), val);
+      dataRow.addDataValue(getColumnType(col).getName(), val);
       col++;
     }
     addRow(dataRow);
@@ -163,11 +186,15 @@ public abstract class AbstractDataSet implements DataSet {
 
   @Override
   public Collection<DataRow> getDataRows() {
-    return rowValues.values();
+    List<DataRow> rows = new LinkedList<>();
+    for(int i = 0; i<getRowCount();i++) {
+      rows.add(getRow(i));
+    }
+    return rows;
   }
 
   private void setFillCounts(int columnIndex, Object parsedValue) {
-    if(getColumn(columnIndex).getFill().equals(parsedValue)) {
+    if(getColumnType(columnIndex).getFill().equals(parsedValue)) {
       if(columnFillCount.containsKey(columnIndex)) {
         columnFillCount.put(columnIndex, columnFillCount.get(columnIndex) + 1);
       }
@@ -179,6 +206,15 @@ public abstract class AbstractDataSet implements DataSet {
 
   public DataValue<LocalDateTime> dateProvider(final DataRow dataRow) {
     return new DataValue<>(LocalDateTime.MIN);
+  }
+
+
+  void createColumn() {
+
+
+
+
+
   }
 
 }

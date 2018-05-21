@@ -16,4 +16,5 @@ public interface DataSet {
   boolean isFillValue(Object value, int fromColumn);
   DataValue<LocalDateTime> dateProvider(DataRow dataRow);
   String describe();
+  List<DataValue> getColumn(int columnIndex);
 }
