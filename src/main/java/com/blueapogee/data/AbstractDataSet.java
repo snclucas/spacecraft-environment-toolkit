@@ -31,7 +31,7 @@ public abstract class AbstractDataSet implements DataSet {
       columns.put(0, new LinkedList<>());
       columnCount++;
     }
-   // this.rowValues = new LinkedHashMap<>();
+    // this.rowValues = new LinkedHashMap<>();
     this.columnFillCount = new LinkedHashMap<>();
   }
 
@@ -209,12 +209,32 @@ public abstract class AbstractDataSet implements DataSet {
   }
 
 
-  void createColumn() {
+  public List<DataValue> sumColumns(int ... columnIndexes) {
+    List<DataValue> values = new ArrayList<>();
 
 
-
-
-
+    for(int row = 0; row < getRowCount(); row++) {
+      Double sum = new Double("0");
+      for (int colIndex = 0; colIndex < columnIndexes.length; colIndex++) {
+        if (!columnIsNumber(columnIndexes[colIndex])) {
+          throw new IllegalArgumentException("Trying to add non-number column, colIndex: " + colIndex);
+        }
+        Number tmp = ((Number) getColumn(columnIndexes[colIndex]).get(row).getData());
+        sum += tmp.doubleValue();
+      }
+      values.add(new DataValue<>(sum));
+    }
+    return values;
   }
+
+
+
+  private boolean columnIsNumber(int columnIndex) {
+    Class classType = getColumnType(columnIndex).getType();
+    return Number.class.isAssignableFrom(classType) || NumberValue.class.isAssignableFrom(classType);
+  }
+
+
+
 
 }

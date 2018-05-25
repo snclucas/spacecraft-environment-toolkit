@@ -10,13 +10,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.StringTokenizer;
+import java.util.ArrayList;
+import java.util.List;
 
-public class SolarWindPlasma extends AbstractDataSet {
+public class SolarWindPlasma <T> extends AbstractDataSet {
 
 
   public SolarWindPlasma(final String description, final boolean addDateColumn) {
     super(description, addDateColumn);
+    buildDataSet();
   }
 
   private void buildDataSet() {
@@ -34,30 +36,44 @@ public class SolarWindPlasma extends AbstractDataSet {
 
   @Override
   public void processRow(final String dataRowStr) {
-
-    String testData = "\"2018-05-17 14:06:00.000\",\"2.86\",\"-1.14\",\"-6.43\",\"338.19\",\"-64.41\",\"7.16\"";
+    List<SolarWindPlasmaData> solarWindPlasma = new ArrayList<>();
+    List[] data = null;
     ObjectMapper mapperObj = new ObjectMapper();
     try {
-      mapperObj.readValue(testData, SolarWindPlasmaData.class);
+      data = mapperObj.readValue(dataRowStr, List[].class);
     } catch (IOException e) {
       e.printStackTrace();
     }
 
+    for(List list : data) {
+      solarWindPlasma.add(new SolarWindPlasmaData(list));
+    }
+
+    String h = "";
 
   }
 
 
   private static class SolarWindPlasmaData {
-    public String time_tag;
-    public String density;
-    public String speed;
-    public String temperature;
+    private String time_tag;
+    private String bx_gsm;
+    private String by_gsm;
+    private String bz_gsm;
+    private String lon_gsm;
+    private String lat_gsm;
+    private String bt;
 
-    public SolarWindPlasmaData(String data) {
-      StringTokenizer tokenizer = new StringTokenizer(data, ",\"");
+    public SolarWindPlasmaData(List data) {
+      if(data.size() > 7) {
 
-      tokenizer.nextToken();
-
+      }
+      this.time_tag = (String)data.get(0);
+      this.bx_gsm = (String)data.get(1);
+      this.by_gsm = (String)data.get(2);
+      this.bz_gsm = (String)data.get(3);
+      this.lon_gsm = (String)data.get(4);
+      this.lat_gsm = (String)data.get(5);
+      this.bt = (String)data.get(6);
     }
 
   }
